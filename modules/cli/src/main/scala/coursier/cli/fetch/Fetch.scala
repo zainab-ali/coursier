@@ -56,16 +56,16 @@ object Fetch extends CoursierCommand[FetchOptions] {
       )
 
       parentArtifacts = {
-        def parents(child: Project): Seq[(Dependency, Publication, Artifact)] = {
+        def parents(child: Project): Seq[(Dependency, Publication, Artifact)] =
           child.parent.flatMap {
-            case mv@(module, version) => res.projectCache.get(mv).map {
-              case (artifactSource, project) =>
-                val dependency = Dependency(module, version)
-                val artifacts = artifactSource.artifacts(dependency, project, None)
-                artifacts.map {case (pub, art) => (dependency, pub, art)} ++ parents(project)
-            }
+            case mv @ (module, version) => res.projectCache.get(mv).map {
+                case (artifactSource, project) =>
+                  val dependency = Dependency(module, version)
+                  val artifacts  = artifactSource.artifacts(dependency, project, None)
+                  artifacts.map { case (pub, art) => (dependency, pub, art) } ++ parents(project)
+              }
           }
-        }.toSeq.flatten
+            .toSeq.flatten
         res.projectCache.values.flatMap {
           case (_, proj) => parents(proj)
         }.toSeq.distinct
@@ -78,7 +78,9 @@ object Fetch extends CoursierCommand[FetchOptions] {
         coursier.Artifacts.fetchChecksums(
           pool,
           Set("MD5", "SHA-1"),
-          (distinctArtifacts ++ (distinctArtifacts ++ parentArtifacts.map(_._3)).map(_.metadata).flatten).distinct,
+          (distinctArtifacts ++ (distinctArtifacts ++ parentArtifacts.map(_._3)).map(
+            _.metadata
+          ).flatten).distinct,
           cache
         ).map(Some(_))
       else Task.point(None)
